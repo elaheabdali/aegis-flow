@@ -1,26 +1,83 @@
 @import "tailwindcss";
+@source "../";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --surface-canvas: #f8fafc;
+    --surface-card: #ffffff;
+    --surface-elevated: #f1f5f9;
+    --surface-hover: #e2e8f0;
+    --border-subtle: #e2e8f0;
+    --border-strong: #cbd5e1;
+
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+
+    --accent-primary: #2563eb;
+    --accent-primary-fg: #ffffff;
+
+    --risk-critical: #dc2626;
+    --risk-critical-bg: rgba(220, 38, 38, 0.1);
+    --risk-high: #ea580c;
+    --risk-high-bg: rgba(234, 88, 12, 0.1);
+    --risk-medium: #d97706;
+    --risk-medium-bg: rgba(217, 119, 6, 0.1);
+    --risk-low: #059669;
+    --risk-low-bg: rgba(5, 150, 105, 0.1);
+  }
+
+  .dark {
+    --surface-canvas: #070b14;
+    --surface-card: #0d1322;
+    --surface-elevated: #141d33;
+    --surface-hover: #1c2742;
+    --border-subtle: #1e293b;
+    --border-strong: #334155;
+
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+
+    --accent-primary: #3b82f6;
+    --accent-primary-fg: #ffffff;
+
+    --risk-critical: #f87171;
+    --risk-critical-bg: rgba(248, 113, 113, 0.14);
+    --risk-high: #fb923c;
+    --risk-high-bg: rgba(251, 146, 60, 0.14);
+    --risk-medium: #fbbf24;
+    --risk-medium-bg: rgba(251, 191, 36, 0.14);
+    --risk-low: #34d399;
+    --risk-low-bg: rgba(52, 211, 153, 0.14);
+  }
+
+  * {
+    border-color: var(--border-subtle);
+  }
+
+  body {
+    background-color: var(--surface-canvas);
+    color: var(--text-primary);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }

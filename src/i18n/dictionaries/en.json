@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "title": "AegisFlow | Real-Time Fraud Detection & Risk Workbench",
+    "description": "High-density financial telemetry, real-time anomaly scoring, and SAR investigation command center."
+  },
+  "header": {
+    "brandName": "AegisFlow",
+    "brandTagline": "RISK TELEMETRY",
+    "streamLive": "Live WebSocket",
+    "streamSimulated": "Simulated Feed",
+    "streamPaused": "Stream Frozen",
+    "roleLabel": "Active Role",
+    "roles": {
+      "senior_investigator": "Senior Investigator",
+      "junior_analyst": "Junior Analyst"
+    },
+    "themeToggle": "Toggle color theme",
+    "languageToggle": "Switch language to Persian"
+  },
+  "kpi": {
+    "throughput": "Stream Throughput",
+    "throughputUnit": "tx/s",
+    "flaggedVolume": "Flagged Exposure",
+    "criticalAlerts": "Critical Alerts",
+    "workerLatency": "Worker Scoring",
+    "latencyUnit": "ms",
+    "sparklineTitle": "Real-Time Risk Velocity"
+  },
+  "workbench": {
+    "title": "Live Transaction Telemetry",
+    "subtitle": "Off-thread Web Worker heuristic scoring with deterministic queue buffering",
+    "searchPlaceholder": "Filter by TX ID, merchant, holder, country, or IP...",
+    "pauseStream": "Freeze Stream",
+    "resumeStream": "Resume Stream",
+    "queuedBadge": "{count} queued",
+    "keyboardHint": "Use ↑ ↓ arrows to navigate, Enter to inspect, Space to freeze/resume",
+    "emptyState": "No transactions match the current filter criteria.",
+    "severities": {
+      "all": "All",
+      "critical": "Critical",
+      "high": "High",
+      "medium": "Medium",
+      "low": "Low"
+    },
+    "statuses": {
+      "cleared": "Cleared",
+      "flagged": "Flagged",
+      "under_review": "Under Review",
+      "frozen": "Frozen",
+      "reported_sar": "SAR Filed"
+    },
+    "columns": {
+      "time": "Time",
+      "txId": "Transaction ID",
+      "merchant": "Merchant & Account",
+      "origin": "Origin / IP",
+      "amount": "Amount",
+      "riskScore": "Risk Score",
+      "status": "Status",
+      "action": "Inspect"
+    }
+  },
+  "factors": {
+    "highAmountAnomaly": "Abnormal transaction value spike (> $8,500 threshold)",
+    "impossibleTravel": "Geolocation impossible travel velocity (< 45m between countries)",
+    "velocityBurst": "High-frequency burst activity (≥ 6 tx/hour)",
+    "highRiskMerchant": "High-risk Merchant Category Code (Crypto / Wire / Luxury)",
+    "newDeviceFingerprint": "Unrecognized device fingerprint on high-value transfer"
+  },
+  "drawer": {
+    "title": "Case Investigation Workbench",
+    "close": "Close investigation panel",
+    "riskBreakdown": "Heuristic Risk Factors",
+    "noFactors": "No elevated risk signals detected for this transaction.",
+    "piiSection": "Protected Cardholder & Telemetry PII",
+    "cardNumber": "Primary Account Number (PAN)",
+    "deviceFp": "Device Fingerprint",
+    "unmaskBtn": "Reveal Full PAN (Audit Logged)",
+    "maskBtn": "Mask PAN",
+    "piiWarning": "Revealing sensitive PII appends an immutable record to the compliance audit trail.",
+    "auditSection": "Immutable Session Audit Log",
+    "auditEmpty": "No sensitive actions recorded in this session yet.",
+    "rbacNotice": "Junior Analysts can inspect telemetry and reveal PII, but account freezing requires Senior Investigator privileges.",
+    "launchWizardBtn": "Initiate SAR & Freeze Workflow",
+    "alreadyActioned": "Enforcement action already applied to this transaction."
+  },
+  "wizard": {
+    "title": "Suspicious Activity Report (SAR) & Enforcement",
+    "subtitle": "Multi-step regulatory filing with optimistic state synchronization",
+    "steps": {
+      "1": "Scope & Evidence",
+      "2": "Fraud Typology",
+      "3": "Compliance Check",
+      "4": "Sign & Submit"
+    },
+    "step1": {
+      "actionLabel": "Enforcement Action",
+      "freezeAndSar": "Freeze Account Immediately + File SAR",
+      "freezeAndSarDesc": "Blocks outgoing card/wire transfers and submits FinCEN SAR filing.",
+      "sarOnly": "File SAR Only (Keep Under Monitoring)",
+      "sarOnlyDesc": "Submits regulatory report without alerting the account holder.",
+      "confirmEvidence": "I confirm that the telemetry timestamps, IP origin, and risk score factors have been verified."
+    },
+    "step2": {
+      "typologyLabel": "Primary Fraud Typology",
+      "typologies": {
+        "account_takeover": "Account Takeover (ATO)",
+        "card_testing": "Automated Card Testing",
+        "velocity_abuse": "Velocity / Limit Abuse",
+        "geo_impossible_travel": "Impossible Geo-Travel",
+        "synthetic_identity": "Synthetic Identity Fraud"
+      },
+      "travelDistanceLabel": "Estimated Distance Between Origins (km)",
+      "travelDistancePlaceholder": "e.g., 6450",
+      "compromisedVectorLabel": "Suspected Compromise Vector",
+      "compromisedVectorPlaceholder": "e.g., Credential stuffing via unverified mobile ASN",
+      "notesLabel": "Investigator Narrative (Sanitized against XSS)",
+      "notesPlaceholder": "Provide objective forensic details supporting this SAR filing (minimum 15 characters)..."
+    },
+    "step3": {
+      "checklistTitle": "Mandatory Regulatory Attestations",
+      "amlVerified": "AML / BSA threshold rules evaluated against transaction history.",
+      "kycCrossChecked": "Account holder KYC identity document verified against device metadata.",
+      "chainOfCustody": "Digital evidence hash preserved in immutable compliance storage."
+    },
+    "step4": {
+      "summaryTitle": "Final Filing Summary",
+      "faultSimulatorLabel": "Resilience Test: Simulate Network Behavior",
+      "faultNone": "Normal Production Latency (200 OK)",
+      "faultServer": "Simulate 500 Server Error (Tests Optimistic Rollback)",
+      "faultTimeout": "Simulate Gateway Timeout (Tests Abort & Recovery)",
+      "signatureLabel": "Investigator Digital Signature (Full Name)",
+      "signaturePlaceholder": "Type your full name to authorize filing"
+    },
+    "actions": {
+      "back": "Previous",
+      "next": "Continue",
+      "submit": "Authorize & Submit SAR",
+      "submitting": "Submitting & Syncing...",
+      "cancel": "Cancel"
+    },
+    "feedback": {
+      "optimisticSuccess": "SAR filed and transaction status updated.",
+      "rollbackError": "Filing failed ({reason}). Optimistic UI changes have been safely rolled back."
+    },
+    "validation": {
+      "evidenceRequired": "You must verify the telemetry evidence before proceeding.",
+      "distanceRequired": "Enter a valid distance in kilometers for impossible travel cases.",
+      "vectorRequired": "Specify the suspected compromise vector (min 5 characters).",
+      "notesMin": "Investigator narrative must be at least 15 characters.",
+      "checklistRequired": "All three regulatory compliance attestations must be checked.",
+      "signatureMin": "Digital signature must be at least 3 characters."
+    }
+  },
+  "errorBoundary": {
+    "title": "Telemetry Module Interrupted",
+    "description": "An unexpected runtime exception occurred. Your audit trail and session state remain protected.",
+    "retry": "Recover Workbench"
+  }
+}
