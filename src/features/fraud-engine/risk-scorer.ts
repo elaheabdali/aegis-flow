@@ -6,12 +6,7 @@ import type {
   Transaction,
 } from '@/types/domain';
 
-const HIGH_RISK_CATEGORIES = new Set([
-  'Crypto Exchange',
-  'Wire Transfer',
-  'Luxury Goods',
-  'Digital Gift Cards',
-]);
+const SHETAB_C2C_DAILY_CAP_IRT = 10_000_000;
 
 export function classifySeverity(score: number): RiskSeverity {
   if (score >= 82) return 'critical';
@@ -21,56 +16,69 @@ export function classifySeverity(score: number): RiskSeverity {
 }
 
 export function scoreTransaction(raw: RawTransaction): Transaction {
-  let score = 8;
+  let score = 6;
   const factors: RiskFactor[] = [];
 
-  if (raw.amount >= 8500) {
-    const weight = raw.amount >= 18000 ? 34 : 22;
+  // 1. Structuring just below the 10M Toman Shetab C2C daily ceiling or high-value wire spike
+  const isNearShetabCap =
+    raw.channel === 'shetab_c2c' &&
+    raw.amountIrt >= 8_800_000 &&
+    raw.amountIrt <= SHETAB_C2C_DAILY_CAP_IRT;
+
+  if (isNearShetabCap || raw.amountIrt >= 45_000_000) {
+    const weight = raw.amountIrt >= 75_000_000 ? 30 : 22;
     score += weight;
     factors.push({
-      code: 'AMT_SPIKE',
+      code: 'SHETAB_STRUCTURING',
       weight,
-      labelKey: 'highAmountAnomaly',
+      labelKey: 'structuringNearCap',
     });
   }
 
-  if (raw.originCountry !== raw.previousCountry && raw.minutesSinceLastTx < 45) {
-    const weight = 32;
+  // 2. Rented Mule Account (حساب اجاره‌ای): rapid pass-through burst
+  if (raw.txCountLastHour >= 6 && raw.minutesSinceLastTx <= 20) {
+    const weight = Math.min(30, raw.txCountLastHour * 3);
     score += weight;
     factors.push({
-      code: 'GEO_VELOCITY',
+      code: 'MULE_VELOCITY',
       weight,
-      labelKey: 'impossibleTravel',
+      labelKey: 'rentedAccountVelocity',
     });
   }
 
-  if (raw.txCountLastHour >= 6) {
-    const weight = Math.min(26, raw.txCountLastHour * 3);
+  // 3. Shahkar Identity / SIM-to-Card Mismatch (ناهمخوانی استعلام شاهکار)
+  if (!raw.shahkarVerified) {
+    const weight = 34;
     score += weight;
     factors.push({
-      code: 'BURST_RATE',
+      code: 'SHAHKAR_FAIL',
       weight,
-      labelKey: 'velocityBurst',
+      labelKey: 'shahkarMismatch',
     });
   }
 
-  if (HIGH_RISK_CATEGORIES.has(raw.merchantCategory)) {
-    const weight = 16;
+  // 4. Foreign Datacenter / VPN IP on financial transfer
+  if (raw.isForeignIp && (raw.isNewDevice || raw.amountIrt >= 5_000_000)) {
+    const weight = 24;
     score += weight;
     factors.push({
-      code: 'MCC_RISK',
+      code: 'FOREIGN_VPN_IP',
       weight,
-      labelKey: 'highRiskMerchant',
+      labelKey: 'foreignDatacenterIp',
     });
   }
 
-  if (raw.isNewDevice && raw.amount >= 2500) {
-    const weight = 18;
+  // 5. High-Risk IPG / Crypto Fiat On-Ramp Burst
+  if (
+    (raw.channel === 'crypto_fiat_gateway' || raw.merchantCategory === 'High-Risk IPG') &&
+    raw.amountIrt >= 12_000_000
+  ) {
+    const weight = 20;
     score += weight;
     factors.push({
-      code: 'NEW_DEVICE',
+      code: 'HIGH_RISK_RAIL',
       weight,
-      labelKey: 'newDeviceFingerprint',
+      labelKey: 'highRiskGatewayBurst',
     });
   }
 
@@ -101,9 +109,13 @@ export function matchesFilter(
 
   return (
     tx.id.toLowerCase().includes(trimmedQuery) ||
-    tx.merchantName.toLowerCase().includes(trimmedQuery) ||
-    tx.accountHolder.toLowerCase().includes(trimmedQuery) ||
-    tx.originCountry.toLowerCase().includes(trimmedQuery) ||
+    tx.shaparakRrn.includes(trimmedQuery) ||
+    tx.bankId.toLowerCase().includes(trimmedQuery) ||
+    tx.channel.toLowerCase().includes(trimmedQuery) ||
+    tx.merchantNameFa.toLowerCase().includes(trimmedQuery) ||
+    tx.merchantNameEn.toLowerCase().includes(trimmedQuery) ||
+    tx.accountHolderFa.toLowerCase().includes(trimmedQuery) ||
+    tx.accountHolderEn.toLowerCase().includes(trimmedQuery) ||
     tx.ipAddress.includes(trimmedQuery)
   );
 }
