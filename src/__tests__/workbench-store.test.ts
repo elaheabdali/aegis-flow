@@ -6,26 +6,35 @@ import type { RawTransaction } from '@/types/domain';
 function makeScoredTx(id: string) {
   const raw: RawTransaction = {
     id,
+    shaparakRrn: '940000556677',
     timestamp: new Date().toISOString(),
-    amount: 14000,
-    currency: 'USD',
-    merchantName: 'SwiftGlobal Remittance',
-    merchantCategory: 'Wire Transfer',
-    accountHolder: 'Marcus Vance',
-    maskedCardNumber: '5412 •••• •••• 3321',
-    rawCardNumber: '5412 1100 2200 3321',
-    originCountry: 'AE',
-    previousCountry: 'GB',
-    minutesSinceLastTx: 15,
+    amountIrt: 65_000_000,
+    channel: 'paya_satna',
+    bankId: 'pasargad',
+    merchantNameFa: 'حواله پایا / ساتنا بین‌بانکی',
+    merchantNameEn: 'Paya / Satna Interbank',
+    merchantCategory: 'Interbank Wire',
+    accountHolderFa: 'سارا محمدی‌پور',
+    accountHolderEn: 'Sara Mohammadipour',
+    maskedCardNumber: '5022-29••-••••-3321',
+    rawCardNumber: '5022-2911-2200-3321',
+    maskedIban: 'IR82 0570 •••• •••• •••• 7892',
+    rawIban: 'IR82 0570 0000 0011 2233 7892',
+    maskedNationalId: '008••••635',
+    rawNationalId: '0084129635',
+    originCity: 'VPN_EU',
+    isForeignIp: true,
+    shahkarVerified: false,
+    minutesSinceLastTx: 10,
     txCountLastHour: 7,
     isNewDevice: true,
-    ipAddress: '91.74.22.10',
-    deviceFingerprint: 'fp_test99',
+    ipAddress: '185.140.22.10',
+    deviceFingerprint: 'ir_fp_test99',
   };
   return scoreTransaction(raw);
 }
 
-describe('Workbench Zustand Store & Queue Buffering', () => {
+describe('Workbench Zustand Store, Toman/Rial Unit & Queue Buffering', () => {
   beforeEach(() => {
     useWorkbenchStore.setState({
       transactions: [],
@@ -33,6 +42,7 @@ describe('Workbench Zustand Store & Queue Buffering', () => {
       isPaused: false,
       connectionMode: 'simulated',
       activeRole: 'senior_investigator',
+      currency: 'IRT',
       selectedTxId: null,
       auditLogs: [],
     });
@@ -40,13 +50,13 @@ describe('Workbench Zustand Store & Queue Buffering', () => {
 
   it('queues incoming transactions when stream is paused and flushes on resume', () => {
     const store = useWorkbenchStore.getState();
-    const tx1 = makeScoredTx('TX-001');
-    const tx2 = makeScoredTx('TX-002');
+    const tx1 = makeScoredTx('SHP-001');
+    const tx2 = makeScoredTx('SHP-002');
 
     store.ingestProcessedBatch({
       accepted: [tx1],
       totalIngested: 1,
-      flaggedVolumeDelta: tx1.amount,
+      flaggedVolumeDeltaIrt: tx1.amountIrt,
       criticalDelta: 1,
       processingTimeMs: 0.5,
       batchIntervalSec: 0.5,
@@ -54,35 +64,36 @@ describe('Workbench Zustand Store & Queue Buffering', () => {
 
     expect(useWorkbenchStore.getState().transactions).toHaveLength(1);
 
-    // Freeze stream
     useWorkbenchStore.getState().togglePause(true);
 
     useWorkbenchStore.getState().ingestProcessedBatch({
       accepted: [tx2],
       totalIngested: 1,
-      flaggedVolumeDelta: tx2.amount,
+      flaggedVolumeDeltaIrt: tx2.amountIrt,
       criticalDelta: 1,
       processingTimeMs: 0.4,
       batchIntervalSec: 0.5,
     });
 
-    // Main grid remains frozen at 1 item while pendingQueue holds tx2
     expect(useWorkbenchStore.getState().transactions).toHaveLength(1);
     expect(useWorkbenchStore.getState().pendingQueue).toHaveLength(1);
 
-    // Resume stream -> flushes pendingQueue to top of transactions
     useWorkbenchStore.getState().togglePause(false);
     expect(useWorkbenchStore.getState().pendingQueue).toHaveLength(0);
     expect(useWorkbenchStore.getState().transactions).toHaveLength(2);
-    expect(useWorkbenchStore.getState().transactions[0]?.id).toBe('TX-002');
+    expect(useWorkbenchStore.getState().transactions[0]?.id).toBe('SHP-002');
   });
 
-  it('supports optimistic status updates and deterministic rollback', () => {
-    const tx = makeScoredTx('TX-OPT1');
+  it('switches currency between Toman (IRT) and Rial (IRR) and rolls back failed status updates', () => {
+    expect(useWorkbenchStore.getState().currency).toBe('IRT');
+    useWorkbenchStore.getState().setCurrency('IRR');
+    expect(useWorkbenchStore.getState().currency).toBe('IRR');
+
+    const tx = makeScoredTx('SHP-OPT1');
     useWorkbenchStore.getState().ingestProcessedBatch({
       accepted: [tx],
       totalIngested: 1,
-      flaggedVolumeDelta: tx.amount,
+      flaggedVolumeDeltaIrt: tx.amountIrt,
       criticalDelta: 1,
       processingTimeMs: 0.3,
       batchIntervalSec: 0.5,
@@ -91,12 +102,12 @@ describe('Workbench Zustand Store & Queue Buffering', () => {
     const originalStatus = useWorkbenchStore.getState().transactions[0]?.status;
     expect(originalStatus).toBe('flagged');
 
-    // Optimistic update
-    useWorkbenchStore.getState().updateTransactionStatus('TX-OPT1', 'frozen');
+    useWorkbenchStore.getState().updateTransactionStatus('SHP-OPT1', 'frozen');
     expect(useWorkbenchStore.getState().transactions[0]?.status).toBe('frozen');
 
-    // Rollback on simulated API failure
-    useWorkbenchStore.getState().updateTransactionStatus('TX-OPT1', originalStatus ?? 'flagged');
+    useWorkbenchStore
+      .getState()
+      .updateTransactionStatus('SHP-OPT1', originalStatus ?? 'flagged');
     expect(useWorkbenchStore.getState().transactions[0]?.status).toBe('flagged');
   });
 });
