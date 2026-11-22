@@ -11,6 +11,7 @@ import {
   Languages,
   UserCheck,
   Shield,
+  Coins,
 } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/get-dictionary';
@@ -41,6 +42,8 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
 
   const activeRole = useWorkbenchStore((s) => s.activeRole);
   const setActiveRole = useWorkbenchStore((s) => s.setActiveRole);
+  const currency = useWorkbenchStore((s) => s.currency);
+  const setCurrency = useWorkbenchStore((s) => s.setCurrency);
   const isPaused = useWorkbenchStore((s) => s.isPaused);
   const connectionMode = useWorkbenchStore((s) => s.connectionMode);
 
@@ -87,7 +90,7 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
                 <span className="text-base font-bold tracking-tight text-[var(--text-primary)]">
                   {dict.header.brandName}
                 </span>
-                <span className="rounded bg-[var(--surface-elevated)] px-1.5 py-0.5 font-mono text-[10px] font-semibold tracking-wider text-blue-500">
+                <span className="rounded bg-[var(--surface-elevated)] px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-blue-500">
                   {dict.header.brandTagline}
                 </span>
               </div>
@@ -99,13 +102,52 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
           </div>
         </div>
 
-        {/* End Controls: RBAC Role Switcher, Language Switcher, Theme Toggle */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        {/* End Controls: Currency (IRT/IRR), RBAC Role, Language (FA/EN), Theme Toggle */}
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          {/* Toman / Rial Currency Unit Switcher */}
+          <div
+            role="group"
+            aria-label={dict.header.currencyLabel}
+            className="flex items-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1"
+          >
+            <Coins
+              className="mx-1.5 h-3.5 w-3.5 text-amber-500"
+              aria-hidden="true"
+            />
+            {(['IRT', 'IRR'] as const).map((unit) => {
+              const isSelected = currency === unit;
+              return (
+                <button
+                  key={unit}
+                  type="button"
+                  onClick={() => setCurrency(unit)}
+                  aria-pressed={isSelected}
+                  className={`relative rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+                    isSelected
+                      ? 'text-[var(--text-primary)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {isSelected && (
+                    <motion.span
+                      layoutId="activeCurrencyPill"
+                      transition={TELEMETRY_SPRING}
+                      className="absolute inset-0 rounded-md bg-[var(--surface-card)] shadow-xs"
+                    />
+                  )}
+                  <span className="relative z-10">
+                    {dict.header.currencies[unit]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
           {/* RBAC Role Switcher */}
           <div
             role="group"
             aria-label={dict.header.roleLabel}
-            className="hidden items-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1 md:flex"
+            className="hidden items-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1 xl:flex"
           >
             {(
               [
@@ -148,7 +190,7 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
             })}
           </div>
 
-          {/* Bilingual EN / FA Switcher */}
+          {/* Bilingual FA / EN Switcher */}
           <div
             role="group"
             aria-label={dict.header.languageToggle}
@@ -158,7 +200,7 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
               className="mx-1.5 h-3.5 w-3.5 text-[var(--text-muted)]"
               aria-hidden="true"
             />
-            {(['en', 'fa'] as const).map((lang) => {
+            {(['fa', 'en'] as const).map((lang) => {
               const isSelected = locale === lang;
               return (
                 <button
@@ -180,7 +222,7 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
                     />
                   )}
                   <span className="relative z-10">
-                    {lang === 'en' ? 'EN' : 'فا'}
+                    {lang === 'fa' ? 'فا' : 'EN'}
                   </span>
                 </button>
               );

@@ -26,14 +26,14 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
   if (message.type === 'INGEST_BATCH') {
     const startTime = performance.now();
     const accepted = [];
-    let flaggedVolumeDelta = 0;
+    let flaggedVolumeDeltaIrt = 0;
     let criticalDelta = 0;
 
     for (const rawTx of message.payload) {
       const scored = scoreTransaction(rawTx);
 
       if (scored.severity === 'critical' || scored.severity === 'high') {
-        flaggedVolumeDelta += scored.amount;
+        flaggedVolumeDeltaIrt += scored.amountIrt;
       }
       if (scored.severity === 'critical') {
         criticalDelta += 1;
@@ -51,7 +51,7 @@ self.onmessage = (event: MessageEvent<WorkerInboundMessage>) => {
       payload: {
         accepted,
         totalIngested: message.payload.length,
-        flaggedVolumeDelta,
+        flaggedVolumeDeltaIrt,
         criticalDelta,
         processingTimeMs,
       },

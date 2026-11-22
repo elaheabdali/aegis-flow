@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { getDirection, type Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/get-dictionary';
-import { formatCurrency } from '@/i18n/formatters';
+import { formatIranianCurrency } from '@/i18n/formatters';
 import { getStepSlideOffset, SMOOTH_EASE, TELEMETRY_SPRING } from '@/lib/motion';
 import { useWorkbenchStore } from '@/store/useWorkbenchStore';
 import type { FraudTypology, Transaction, TransactionStatus } from '@/types/domain';
@@ -39,14 +39,14 @@ function createSarSchema(dict: Dictionary) {
         message: dict.wizard.validation.evidenceRequired,
       }),
       typology: z.enum([
-        'account_takeover',
-        'card_testing',
-        'velocity_abuse',
-        'geo_impossible_travel',
-        'synthetic_identity',
+        'rented_mule_account',
+        'shetab_structuring',
+        'shahkar_identity_mismatch',
+        'illegal_betting_gateway',
+        'account_takeover_vpn',
       ]),
-      travelDistanceKm: z.string().optional(),
-      compromisedVector: z.string().optional(),
+      splitCount: z.string().optional(),
+      linkedMuleCount: z.string().optional(),
       analystNotes: z
         .string()
         .min(15, { message: dict.wizard.validation.notesMin }),
@@ -65,22 +65,23 @@ function createSarSchema(dict: Dictionary) {
         .min(3, { message: dict.wizard.validation.signatureMin }),
     })
     .superRefine((val, ctx) => {
-      if (val.typology === 'geo_impossible_travel') {
-        const dist = Number(val.travelDistanceKm);
-        if (!val.travelDistanceKm || Number.isNaN(dist) || dist <= 0) {
+      if (val.typology === 'shetab_structuring') {
+        const count = Number(val.splitCount);
+        if (!val.splitCount || Number.isNaN(count) || count < 2) {
           ctx.addIssue({
             code: 'custom',
-            path: ['travelDistanceKm'],
-            message: dict.wizard.validation.distanceRequired,
+            path: ['splitCount'],
+            message: dict.wizard.validation.splitCountRequired,
           });
         }
       }
-      if (val.typology === 'account_takeover') {
-        if (!val.compromisedVector || val.compromisedVector.trim().length < 5) {
+      if (val.typology === 'rented_mule_account') {
+        const accounts = Number(val.linkedMuleCount);
+        if (!val.linkedMuleCount || Number.isNaN(accounts) || accounts < 1) {
           ctx.addIssue({
             code: 'custom',
-            path: ['compromisedVector'],
-            message: dict.wizard.validation.vectorRequired,
+            path: ['linkedMuleCount'],
+            message: dict.wizard.validation.muleAccountsRequired,
           });
         }
       }
@@ -101,6 +102,7 @@ export function SarWizardModal({
   const [stepDelta, setStepDelta] = useState<number>(1);
 
   const activeRole = useWorkbenchStore((s) => s.activeRole);
+  const currency = useWorkbenchStore((s) => s.currency);
   const updateTransactionStatus = useWorkbenchStore(
     (s) => s.updateTransactionStatus
   );
@@ -121,9 +123,9 @@ export function SarWizardModal({
     defaultValues: {
       actionType: isJuniorAnalyst ? 'sar_only' : 'freeze_and_sar',
       evidenceConfirmed: false,
-      typology: 'geo_impossible_travel',
-      travelDistanceKm: '6450',
-      compromisedVector: '',
+      typology: 'shetab_structuring',
+      splitCount: '4',
+      linkedMuleCount: '3',
       analystNotes: '',
       amlVerified: false,
       kycCrossChecked: false,
@@ -184,7 +186,6 @@ export function SarWizardModal({
       const optimisticStatus: TransactionStatus =
         values.actionType === 'freeze_and_sar' ? 'frozen' : 'reported_sar';
 
-      // Apply Optimistic UI status immediately
       updateTransactionStatus(transaction.id, optimisticStatus);
       return { previousStatus };
     },
@@ -197,14 +198,13 @@ export function SarWizardModal({
             ? 'ACCOUNT_FROZEN'
             : 'SAR_SUBMITTED',
         targetId: transaction.id,
-        reason: `Filed SAR (${values.typology}) signed by ${values.digitalSignature}`,
+        reason: `Filed FIU report (${values.typology}) signed by ${values.digitalSignature}`,
       });
       onNotify(dict.wizard.feedback.optimisticSuccess, 'success');
       onClose();
     },
     onError: (error, _values, context) => {
       if (transaction && context?.previousStatus) {
-        // Explicit Rollback on Server Error or Timeout
         updateTransactionStatus(transaction.id, context.previousStatus);
       }
       const reason = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
@@ -224,8 +224,8 @@ export function SarWizardModal({
     } else if (step === 2) {
       valid = await trigger([
         'typology',
-        'travelDistanceKm',
-        'compromisedVector',
+        'splitCount',
+        'linkedMuleCount',
         'analystNotes',
       ]);
     } else if (step === 3) {
@@ -254,11 +254,11 @@ export function SarWizardModal({
   };
 
   const typologies: readonly FraudTypology[] = [
-    'geo_impossible_travel',
-    'account_takeover',
-    'card_testing',
-    'velocity_abuse',
-    'synthetic_identity',
+    'shetab_structuring',
+    'rented_mule_account',
+    'shahkar_identity_mismatch',
+    'illegal_betting_gateway',
+    'account_takeover_vpn',
   ];
 
   const stepSlideOffset = getStepSlideOffset(dir, stepDelta);
@@ -270,7 +270,6 @@ export function SarWizardModal({
       aria-label={dict.wizard.title}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -279,7 +278,6 @@ export function SarWizardModal({
         className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs"
       />
 
-      {/* Modal Container */}
       <motion.div
         initial={{ opacity: 0, scale: 0.96, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -360,7 +358,7 @@ export function SarWizardModal({
                 transition={SMOOTH_EASE}
                 className="space-y-4"
               >
-                {/* STEP 1: Action Scope & Evidence Confirmation */}
+                {/* STEP 1 */}
                 {step === 1 && (
                   <>
                     <label className="block text-xs font-bold text-[var(--text-primary)]">
@@ -435,7 +433,7 @@ export function SarWizardModal({
                   </>
                 )}
 
-                {/* STEP 2: Fraud Typology & Conditional Forensic Fields */}
+                {/* STEP 2 */}
                 {step === 2 && (
                   <>
                     <div>
@@ -458,48 +456,49 @@ export function SarWizardModal({
                       </select>
                     </div>
 
-                    {watchedTypology === 'geo_impossible_travel' && (
+                    {watchedTypology === 'shetab_structuring' && (
                       <div>
                         <label
-                          htmlFor="distance-input"
+                          htmlFor="split-count-input"
                           className="mb-1.5 block text-xs font-bold text-[var(--text-primary)]"
                         >
-                          {dict.wizard.step2.travelDistanceLabel}
+                          {dict.wizard.step2.splitCountLabel}
                         </label>
                         <input
-                          id="distance-input"
+                          id="split-count-input"
                           type="text"
                           dir="ltr"
-                          placeholder={dict.wizard.step2.travelDistancePlaceholder}
-                          {...register('travelDistanceKm')}
+                          placeholder={dict.wizard.step2.splitCountPlaceholder}
+                          {...register('splitCount')}
                           className="h-9 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 font-mono text-xs text-[var(--text-primary)] focus:border-blue-500 focus:outline-none"
                         />
-                        {errors.travelDistanceKm && (
+                        {errors.splitCount && (
                           <p role="alert" className="mt-1 text-xs text-rose-500">
-                            {errors.travelDistanceKm.message}
+                            {errors.splitCount.message}
                           </p>
                         )}
                       </div>
                     )}
 
-                    {watchedTypology === 'account_takeover' && (
+                    {watchedTypology === 'rented_mule_account' && (
                       <div>
                         <label
-                          htmlFor="vector-input"
+                          htmlFor="mule-count-input"
                           className="mb-1.5 block text-xs font-bold text-[var(--text-primary)]"
                         >
-                          {dict.wizard.step2.compromisedVectorLabel}
+                          {dict.wizard.step2.muleAccountsLabel}
                         </label>
                         <input
-                          id="vector-input"
+                          id="mule-count-input"
                           type="text"
-                          placeholder={dict.wizard.step2.compromisedVectorPlaceholder}
-                          {...register('compromisedVector')}
-                          className="h-9 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 text-xs text-[var(--text-primary)] focus:border-blue-500 focus:outline-none"
+                          dir="ltr"
+                          placeholder={dict.wizard.step2.muleAccountsPlaceholder}
+                          {...register('linkedMuleCount')}
+                          className="h-9 w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-3 font-mono text-xs text-[var(--text-primary)] focus:border-blue-500 focus:outline-none"
                         />
-                        {errors.compromisedVector && (
+                        {errors.linkedMuleCount && (
                           <p role="alert" className="mt-1 text-xs text-rose-500">
-                            {errors.compromisedVector.message}
+                            {errors.linkedMuleCount.message}
                           </p>
                         )}
                       </div>
@@ -528,7 +527,7 @@ export function SarWizardModal({
                   </>
                 )}
 
-                {/* STEP 3: Regulatory Compliance Checklist */}
+                {/* STEP 3 */}
                 {step === 3 && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-[var(--text-primary)]">
@@ -575,7 +574,7 @@ export function SarWizardModal({
                   </div>
                 )}
 
-                {/* STEP 4: Final Summary, Fault Simulator & Digital Sign-off */}
+                {/* STEP 4 */}
                 {step === 4 && (
                   <div className="space-y-4">
                     <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/60 p-3.5 text-xs">
@@ -584,15 +583,19 @@ export function SarWizardModal({
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-2 text-[var(--text-secondary)]">
                         <div>
-                          TX: <span className="font-mono font-semibold text-[var(--text-primary)]">{transaction.id}</span>
-                        </div>
-                        <div className="text-end">
+                          TX:{' '}
                           <span dir="ltr" className="font-mono font-semibold text-[var(--text-primary)]">
-                            {formatCurrency(transaction.amount, locale)}
+                            {transaction.id}
                           </span>
                         </div>
+                        <div className="text-end font-semibold text-[var(--text-primary)]">
+                          {formatIranianCurrency(
+                            transaction.amountIrt,
+                            currency,
+                            locale
+                          )}
+                        </div>
                         <div className="col-span-2">
-                          Typology:{' '}
                           <span className="font-semibold text-blue-500">
                             {dict.wizard.step2.typologies[watchedTypology]}
                           </span>
@@ -600,7 +603,6 @@ export function SarWizardModal({
                       </div>
                     </div>
 
-                    {/* Fault Injection Selector to Test Optimistic Rollback Live */}
                     <div>
                       <label
                         htmlFor="fault-select"

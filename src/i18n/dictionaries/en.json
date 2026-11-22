@@ -1,35 +1,57 @@
 {
   "meta": {
-    "title": "AegisFlow | Real-Time Fraud Detection & Risk Workbench",
-    "description": "High-density financial telemetry, real-time anomaly scoring, and SAR investigation command center."
+    "title": "AegisFlow | Iranian Banking & Shaparak Real-Time Fraud Workbench",
+    "description": "High-density Shetab/Shaparak telemetry, mule account scoring, Shahkar KYC verification, and FIU SAR investigation workbench."
   },
   "header": {
     "brandName": "AegisFlow",
-    "brandTagline": "RISK TELEMETRY",
-    "streamLive": "Live WebSocket",
-    "streamSimulated": "Simulated Feed",
+    "brandTagline": "BANKING RISK OPS",
+    "streamLive": "Live Shaparak Socket",
+    "streamSimulated": "Shetab Stream Feed",
     "streamPaused": "Stream Frozen",
     "roleLabel": "Active Role",
     "roles": {
-      "senior_investigator": "Senior Investigator",
-      "junior_analyst": "Junior Analyst"
+      "senior_investigator": "Senior AML Investigator",
+      "junior_analyst": "Risk Monitoring Analyst"
+    },
+    "currencyLabel": "Currency",
+    "currencies": {
+      "IRT": "Toman",
+      "IRR": "Rial"
     },
     "themeToggle": "Toggle color theme",
     "languageToggle": "Switch language to Persian"
   },
+  "banks": {
+    "mellat": "Bank Mellat",
+    "melli": "Bank Melli",
+    "saman": "Saman Bank",
+    "pasargad": "Bank Pasargad",
+    "saderat": "Bank Saderat",
+    "parsian": "Parsian Bank",
+    "ayandeh": "Ayandeh Bank",
+    "blu": "BluBank"
+  },
+  "channels": {
+    "shaparak_ipg": "Shaparak IPG",
+    "shetab_c2c": "Shetab Card-to-Card",
+    "paya_satna": "Paya / Satna Wire",
+    "bnpl_wallet": "BNPL & Wallet",
+    "crypto_fiat_gateway": "Crypto Fiat Ramp"
+  },
   "kpi": {
-    "throughput": "Stream Throughput",
+    "throughput": "Network Throughput",
     "throughputUnit": "tx/s",
-    "flaggedVolume": "Flagged Exposure",
+    "flaggedVolume": "Flagged Risk Volume",
     "criticalAlerts": "Critical Alerts",
     "workerLatency": "Worker Scoring",
     "latencyUnit": "ms",
-    "sparklineTitle": "Real-Time Risk Velocity"
+    "sparklineTitle": "Real-Time Network Risk Velocity"
   },
   "workbench": {
-    "title": "Live Transaction Telemetry",
-    "subtitle": "Off-thread Web Worker heuristic scoring with deterministic queue buffering",
-    "searchPlaceholder": "Filter by TX ID, merchant, holder, country, or IP...",
+    "title": "Live Shetab & Shaparak Transaction Telemetry",
+    "subtitle": "Off-thread Web Worker heuristic scoring with automatic BIN issuer detection & queue buffering",
+    "searchPlaceholder": "Filter by TX ID, Shaparak RRN, merchant, holder, bank, or IP...",
     "pauseStream": "Freeze Stream",
     "resumeStream": "Resume Stream",
     "queuedBadge": "{count} queued",
@@ -40,19 +62,19 @@
       "critical": "Critical",
       "high": "High",
       "medium": "Medium",
-      "low": "Low"
+      "low": "Normal"
     },
     "statuses": {
       "cleared": "Cleared",
       "flagged": "Flagged",
       "under_review": "Under Review",
-      "frozen": "Frozen",
-      "reported_sar": "SAR Filed"
+      "frozen": "Settlement Frozen",
+      "reported_sar": "Reported to FIU"
     },
     "columns": {
       "time": "Time",
-      "txId": "Transaction ID",
-      "merchant": "Merchant & Account",
+      "txId": "TX ID / Card",
+      "merchant": "Merchant / Bank & Rail",
       "origin": "Origin / IP",
       "amount": "Amount",
       "riskScore": "Risk Score",
@@ -61,72 +83,80 @@
     }
   },
   "factors": {
-    "highAmountAnomaly": "Abnormal transaction value spike (> $8,500 threshold)",
-    "impossibleTravel": "Geolocation impossible travel velocity (< 45m between countries)",
-    "velocityBurst": "High-frequency burst activity (≥ 6 tx/hour)",
-    "highRiskMerchant": "High-risk Merchant Category Code (Crypto / Wire / Luxury)",
-    "newDeviceFingerprint": "Unrecognized device fingerprint on high-value transfer"
+    "structuringNearCap": "Structuring just below 10M Toman Shetab C2C daily ceiling",
+    "rentedAccountVelocity": "Rented Mule Account pattern: rapid pass-through velocity burst",
+    "shahkarMismatch": "Shahkar registry mismatch between National ID, SIM owner, and cardholder",
+    "foreignDatacenterIp": "Financial transfer initiated from foreign datacenter / VPN IP on new device",
+    "highRiskGatewayBurst": "Unusual high-value deposit on high-risk IPG or crypto fiat ramp"
   },
   "drawer": {
-    "title": "Case Investigation Workbench",
+    "title": "Financial Forensics & Compliance Drawer",
     "close": "Close investigation panel",
-    "riskBreakdown": "Heuristic Risk Factors",
+    "riskBreakdown": "Detected Fraud Signals",
     "noFactors": "No elevated risk signals detected for this transaction.",
-    "piiSection": "Protected Cardholder & Telemetry PII",
-    "cardNumber": "Primary Account Number (PAN)",
+    "shahkarLabel": "Shahkar Registry Check",
+    "shahkarVerified": "Identity Match Verified",
+    "shahkarFailed": "Identity Mismatch (Alert)",
+    "rrnLabel": "Shaparak RRN",
+    "channelLabel": "Payment Rail",
+    "piiSection": "Protected Identity & Banking PII",
+    "cardNumber": "Shetab Card Number",
+    "ibanNumber": "Sheba / IBAN",
+    "nationalId": "National ID (Code Melli)",
+    "nationalIdValid": "Valid Checksum",
     "deviceFp": "Device Fingerprint",
-    "unmaskBtn": "Reveal Full PAN (Audit Logged)",
-    "maskBtn": "Mask PAN",
-    "piiWarning": "Revealing sensitive PII appends an immutable record to the compliance audit trail.",
+    "unmaskBtn": "Reveal Sensitive PII (Audit Logged)",
+    "maskBtn": "Mask PII",
+    "piiWarning": "Revealing PAN, IBAN, or National ID appends an immutable record to the compliance audit trail.",
     "auditSection": "Immutable Session Audit Log",
     "auditEmpty": "No sensitive actions recorded in this session yet.",
-    "rbacNotice": "Junior Analysts can inspect telemetry and reveal PII, but account freezing requires Senior Investigator privileges.",
-    "launchWizardBtn": "Initiate SAR & Freeze Workflow",
+    "rbacNotice": "Risk Monitoring Analysts can inspect telemetry and reveal PII, but freezing Shaparak settlements requires Senior AML Investigator privileges.",
+    "launchWizardBtn": "Initiate Settlement Freeze & FIU SAR Filing",
     "alreadyActioned": "Enforcement action already applied to this transaction."
   },
   "wizard": {
-    "title": "Suspicious Activity Report (SAR) & Enforcement",
-    "subtitle": "Multi-step regulatory filing with optimistic state synchronization",
+    "title": "Shaparak Settlement Freeze & FIU Suspicious Activity Report",
+    "subtitle": "4-step CBI AML/KYC compliance filing with optimistic state synchronization",
     "steps": {
-      "1": "Scope & Evidence",
-      "2": "Fraud Typology",
-      "3": "Compliance Check",
+      "1": "Scope",
+      "2": "Typology",
+      "3": "Compliance",
       "4": "Sign & Submit"
     },
     "step1": {
       "actionLabel": "Enforcement Action",
-      "freezeAndSar": "Freeze Account Immediately + File SAR",
-      "freezeAndSarDesc": "Blocks outgoing card/wire transfers and submits FinCEN SAR filing.",
-      "sarOnly": "File SAR Only (Keep Under Monitoring)",
-      "sarOnlyDesc": "Submits regulatory report without alerting the account holder.",
-      "confirmEvidence": "I confirm that the telemetry timestamps, IP origin, and risk score factors have been verified."
+      "freezeAndSar": "Freeze Settlement / Wallet Immediately + File FIU SAR",
+      "freezeAndSarDesc": "Halts outgoing Shaparak settlement or wallet withdrawal and submits an FIU report.",
+      "sarOnly": "File FIU SAR Only (Silent Monitoring)",
+      "sarOnlyDesc": "Submits confidential regulatory report without alerting the account holder.",
+      "confirmEvidence": "I confirm that the Shaparak RRN, Jalali/UTC timestamps, and risk signals have been verified."
     },
     "step2": {
       "typologyLabel": "Primary Fraud Typology",
       "typologies": {
-        "account_takeover": "Account Takeover (ATO)",
-        "card_testing": "Automated Card Testing",
-        "velocity_abuse": "Velocity / Limit Abuse",
-        "geo_impossible_travel": "Impossible Geo-Travel",
-        "synthetic_identity": "Synthetic Identity Fraud"
+        "rented_mule_account": "Rented Mule Account & Layered Laundering",
+        "shetab_structuring": "Shetab Daily Cap Structuring (Smurfing)",
+        "shahkar_identity_mismatch": "Stolen Card / Shahkar Identity Mismatch",
+        "illegal_betting_gateway": "Unauthorized Merchant / Illegal Betting Gateway",
+        "account_takeover_vpn": "Account Takeover (ATO) via Foreign VPN IP"
       },
-      "travelDistanceLabel": "Estimated Distance Between Origins (km)",
-      "travelDistancePlaceholder": "e.g., 6450",
-      "compromisedVectorLabel": "Suspected Compromise Vector",
-      "compromisedVectorPlaceholder": "e.g., Credential stuffing via unverified mobile ASN",
+      "splitCountLabel": "Number of Split Transactions in Past 24h",
+      "splitCountPlaceholder": "e.g., 4",
+      "muleAccountsLabel": "Linked Destination Mule Accounts Identified",
+      "muleAccountsPlaceholder": "e.g., 3",
       "notesLabel": "Investigator Narrative (Sanitized against XSS)",
-      "notesPlaceholder": "Provide objective forensic details supporting this SAR filing (minimum 15 characters)..."
+      "notesPlaceholder": "Provide objective forensic details for the Financial Intelligence Unit (minimum 15 characters)..."
     },
     "step3": {
-      "checklistTitle": "Mandatory Regulatory Attestations",
-      "amlVerified": "AML / BSA threshold rules evaluated against transaction history.",
-      "kycCrossChecked": "Account holder KYC identity document verified against device metadata.",
-      "chainOfCustody": "Digital evidence hash preserved in immutable compliance storage."
+      "checklistTitle": "Mandatory CBI & Shaparak Regulatory Attestations",
+      "amlVerified": "Central Bank AML thresholds and velocity rules evaluated against account history.",
+      "kycCrossChecked": "Shahkar SIM-to-National-ID verification record documented.",
+      "chainOfCustody": "Digital evidence hash and IP telemetry preserved in immutable compliance storage."
     },
     "step4": {
-      "summaryTitle": "Final Filing Summary",
-      "faultSimulatorLabel": "Resilience Test: Simulate Network Behavior",
-      "faultNone": "Normal Production Latency (200 OK)",
+      "summaryTitle": "Final Regulatory Filing Summary",
+      "faultSimulatorLabel": "Resilience Test: Simulate Upstream Core Response",
+      "faultNone": "Normal Core Response (200 OK)",
       "faultServer": "Simulate 500 Server Error (Tests Optimistic Rollback)",
       "faultTimeout": "Simulate Gateway Timeout (Tests Abort & Recovery)",
       "signatureLabel": "Investigator Digital Signature (Full Name)",
@@ -135,18 +165,18 @@
     "actions": {
       "back": "Previous",
       "next": "Continue",
-      "submit": "Authorize & Submit SAR",
+      "submit": "Authorize & Submit FIU Report",
       "submitting": "Submitting & Syncing...",
       "cancel": "Cancel"
     },
     "feedback": {
-      "optimisticSuccess": "SAR filed and transaction status updated.",
+      "optimisticSuccess": "FIU report filed and transaction status updated.",
       "rollbackError": "Filing failed ({reason}). Optimistic UI changes have been safely rolled back."
     },
     "validation": {
       "evidenceRequired": "You must verify the telemetry evidence before proceeding.",
-      "distanceRequired": "Enter a valid distance in kilometers for impossible travel cases.",
-      "vectorRequired": "Specify the suspected compromise vector (min 5 characters).",
+      "splitCountRequired": "Enter the number of split transactions (minimum 2).",
+      "muleAccountsRequired": "Enter a valid count of linked mule accounts.",
       "notesMin": "Investigator narrative must be at least 15 characters.",
       "checklistRequired": "All three regulatory compliance attestations must be checked.",
       "signatureMin": "Digital signature must be at least 3 characters."

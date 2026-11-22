@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type {
   AnalystRole,
   AuditLogEntry,
+  CurrencyUnit,
   StreamConnectionMode,
   TelemetryMetrics,
   Transaction,
@@ -18,6 +19,7 @@ interface WorkbenchState {
   readonly isPaused: boolean;
   readonly connectionMode: StreamConnectionMode;
   readonly activeRole: AnalystRole;
+  readonly currency: CurrencyUnit;
   readonly selectedTxId: string | null;
   readonly auditLogs: readonly AuditLogEntry[];
   readonly metrics: TelemetryMetrics;
@@ -26,7 +28,7 @@ interface WorkbenchState {
   ingestProcessedBatch: (payload: {
     readonly accepted: readonly Transaction[];
     readonly totalIngested: number;
-    readonly flaggedVolumeDelta: number;
+    readonly flaggedVolumeDeltaIrt: number;
     readonly criticalDelta: number;
     readonly processingTimeMs: number;
     readonly batchIntervalSec: number;
@@ -34,6 +36,7 @@ interface WorkbenchState {
   togglePause: (forceState?: boolean) => void;
   setConnectionMode: (mode: StreamConnectionMode) => void;
   setActiveRole: (role: AnalystRole) => void;
+  setCurrency: (currency: CurrencyUnit) => void;
   selectTransaction: (txId: string | null) => void;
   updateTransactionStatus: (txId: string, status: TransactionStatus) => void;
   addAuditLog: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
@@ -45,11 +48,12 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   isPaused: false,
   connectionMode: 'simulated',
   activeRole: 'senior_investigator',
+  currency: 'IRT',
   selectedTxId: null,
   auditLogs: [],
   metrics: {
     throughputPerSec: 0,
-    flaggedExposureUsd: 0,
+    flaggedExposureIrt: 0,
     criticalCount: 0,
     workerLatencyMs: 0.4,
   },
@@ -58,7 +62,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
   ingestProcessedBatch: ({
     accepted,
     totalIngested,
-    flaggedVolumeDelta,
+    flaggedVolumeDeltaIrt,
     criticalDelta,
     processingTimeMs,
     batchIntervalSec,
@@ -80,7 +84,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
 
       const nextMetrics: TelemetryMetrics = {
         throughputPerSec,
-        flaggedExposureUsd: state.metrics.flaggedExposureUsd + flaggedVolumeDelta,
+        flaggedExposureIrt: state.metrics.flaggedExposureIrt + flaggedVolumeDeltaIrt,
         criticalCount: state.metrics.criticalCount + criticalDelta,
         workerLatencyMs: Number(processingTimeMs.toFixed(2)),
       };
@@ -131,6 +135,7 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
 
   setConnectionMode: (mode) => set({ connectionMode: mode }),
   setActiveRole: (role) => set({ activeRole: role }),
+  setCurrency: (currency) => set({ currency }),
   selectTransaction: (txId) => set({ selectedTxId: txId }),
 
   updateTransactionStatus: (txId, status) =>

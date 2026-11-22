@@ -1,10 +1,13 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Activity, AlertOctagon, Cpu, DollarSign } from 'lucide-react';
+import { Activity, AlertOctagon, Banknote, Cpu } from 'lucide-react';
 import type { Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/get-dictionary';
-import { formatCurrency, formatNumber } from '@/i18n/formatters';
+import {
+  formatCompactIranianCurrency,
+  formatNumber,
+} from '@/i18n/formatters';
 import { STAGGER_CONTAINER } from '@/lib/motion';
 import { TelemetryCard } from '@/components/ui/MotionPrimitives';
 import { useWorkbenchStore } from '@/store/useWorkbenchStore';
@@ -17,6 +20,7 @@ interface KpiTelemetryBarProps {
 
 export function KpiTelemetryBar({ locale, dict }: KpiTelemetryBarProps) {
   const metrics = useWorkbenchStore((s) => s.metrics);
+  const currency = useWorkbenchStore((s) => s.currency);
   const riskVelocityHistory = useWorkbenchStore((s) => s.riskVelocityHistory);
 
   return (
@@ -35,7 +39,7 @@ export function KpiTelemetryBar({ locale, dict }: KpiTelemetryBarProps) {
             <span>{dict.kpi.throughput}</span>
           </div>
           <div className="mt-2 flex items-baseline gap-1.5">
-            <span className="font-mono text-2xl font-bold tracking-tight text-[var(--text-primary)] tabular-nums">
+            <span className="text-2xl font-bold tracking-tight text-[var(--text-primary)] tabular-nums">
               {formatNumber(metrics.throughputPerSec, locale)}
             </span>
             <span className="text-xs font-medium text-[var(--text-muted)]">
@@ -49,17 +53,18 @@ export function KpiTelemetryBar({ locale, dict }: KpiTelemetryBarProps) {
         />
       </TelemetryCard>
 
-      {/* Card 2: Flagged Financial Exposure */}
+      {/* Card 2: Flagged Financial Exposure (Toman / Rial) */}
       <TelemetryCard>
         <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--text-secondary)]">
-          <DollarSign className="h-3.5 w-3.5 text-amber-500" />
+          <Banknote className="h-3.5 w-3.5 text-amber-500" />
           <span>{dict.kpi.flaggedVolume}</span>
         </div>
-        <div
-          dir="ltr"
-          className="mt-2 text-start font-mono text-2xl font-bold tracking-tight text-[var(--text-primary)] tabular-nums"
-        >
-          {formatCurrency(metrics.flaggedExposureUsd, locale)}
+        <div className="mt-2 text-start text-xl font-bold tracking-tight text-[var(--text-primary)] tabular-nums">
+          {formatCompactIranianCurrency(
+            metrics.flaggedExposureIrt,
+            currency,
+            locale
+          )}
         </div>
       </TelemetryCard>
 
@@ -70,10 +75,13 @@ export function KpiTelemetryBar({ locale, dict }: KpiTelemetryBarProps) {
           <span>{dict.kpi.criticalAlerts}</span>
         </div>
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="font-mono text-2xl font-bold tracking-tight text-rose-500 tabular-nums">
+          <span className="text-2xl font-bold tracking-tight text-rose-500 tabular-nums">
             {formatNumber(metrics.criticalCount, locale)}
           </span>
-          <span className="rounded bg-rose-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-rose-500">
+          <span
+            dir="ltr"
+            className="rounded bg-rose-500/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-rose-500"
+          >
             SCORE ≥ 82
           </span>
         </div>
@@ -86,7 +94,7 @@ export function KpiTelemetryBar({ locale, dict }: KpiTelemetryBarProps) {
           <span>{dict.kpi.workerLatency}</span>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5">
-          <span className="font-mono text-2xl font-bold tracking-tight text-emerald-500 tabular-nums">
+          <span className="text-2xl font-bold tracking-tight text-emerald-500 tabular-nums">
             {formatNumber(metrics.workerLatencyMs, locale, 2)}
           </span>
           <span className="text-xs font-medium text-[var(--text-muted)]">

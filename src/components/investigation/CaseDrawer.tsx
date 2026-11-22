@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   AlertTriangle,
+  BadgeCheck,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -12,13 +13,25 @@ import {
   History,
   Lock,
   ShieldAlert,
+  ShieldX,
   X,
 } from 'lucide-react';
 import { getDirection, type Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/get-dictionary';
-import { formatCurrency, formatNumber, formatTime } from '@/i18n/formatters';
+import {
+  formatIranianCurrency,
+  formatJalaliDateTime,
+  formatNumber,
+  formatTime,
+} from '@/i18n/formatters';
 import { getDrawerSlideOffset, TELEMETRY_SPRING } from '@/lib/motion';
-import { formatCardDisplay, maskIpAddress } from '@/features/security/pii-masker';
+import {
+  formatCardDisplay,
+  formatIbanDisplay,
+  formatNationalIdDisplay,
+  isValidIranianNationalId,
+  maskIpAddress,
+} from '@/features/security/pii-masker';
 import { useWorkbenchStore } from '@/store/useWorkbenchStore';
 import type { Transaction } from '@/types/domain';
 
@@ -35,6 +48,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
   const transactions = useWorkbenchStore((s) => s.transactions);
   const pendingQueue = useWorkbenchStore((s) => s.pendingQueue);
   const activeRole = useWorkbenchStore((s) => s.activeRole);
+  const currency = useWorkbenchStore((s) => s.currency);
   const auditLogs = useWorkbenchStore((s) => s.auditLogs);
   const addAuditLog = useWorkbenchStore((s) => s.addAuditLog);
 
@@ -68,7 +82,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
         actorRole: activeRole,
         action: 'PII_UNMASKED',
         targetId: selectedTx.id,
-        reason: 'Analyst revealed full PAN & IP address during case review',
+        reason: 'Revealed Shetab PAN, IBAN, and Iranian National ID during review',
       });
     }
   };
@@ -93,7 +107,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
             aria-hidden="true"
           />
 
-          {/* Direction-Aware End-Anchored Slide Drawer */}
+          {/* Direction-Aware Slide Drawer */}
           <motion.aside
             key="drawer-panel"
             role="dialog"
@@ -120,7 +134,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                   </span>
                 </div>
                 <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
-                  {dict.drawer.title}
+                  {dict.drawer.title} • {formatJalaliDateTime(selectedTx.timestamp, locale)}
                 </p>
               </div>
 
@@ -135,39 +149,74 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
             </div>
 
             {/* Scrollable Body */}
-            <div className="flex-1 space-y-6 overflow-y-auto p-6">
-              {/* Key Telemetry Summary */}
+            <div className="flex-1 space-y-5 overflow-y-auto p-6">
+              {/* Telemetry & Shaparak Summary */}
               <div className="grid grid-cols-2 gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/60 p-4">
                 <div>
                   <span className="text-[11px] text-[var(--text-muted)]">
                     {dict.workbench.columns.merchant}
                   </span>
                   <p className="mt-0.5 text-sm font-semibold text-[var(--text-primary)]">
-                    {selectedTx.merchantName}
+                    {locale === 'fa'
+                      ? selectedTx.merchantNameFa
+                      : selectedTx.merchantNameEn}
                   </p>
                   <p className="text-xs text-[var(--text-secondary)]">
-                    {selectedTx.accountHolder}
+                    {locale === 'fa'
+                      ? selectedTx.accountHolderFa
+                      : selectedTx.accountHolderEn}{' '}
+                    ({dict.banks[selectedTx.bankId]})
                   </p>
                 </div>
                 <div className="text-end">
                   <span className="text-[11px] text-[var(--text-muted)]">
                     {dict.workbench.columns.amount}
                   </span>
+                  <p className="mt-0.5 text-base font-bold text-[var(--text-primary)] tabular-nums">
+                    {formatIranianCurrency(selectedTx.amountIrt, currency, locale)}
+                  </p>
+                  <p className="text-xs font-semibold text-rose-500">
+                    {dict.workbench.columns.riskScore}:{' '}
+                    {formatNumber(selectedTx.riskScore, locale)} /{' '}
+                    {formatNumber(100, locale)}
+                  </p>
+                </div>
+
+                <div className="border-t border-[var(--border-subtle)] pt-2.5">
+                  <span className="text-[11px] text-[var(--text-muted)]">
+                    {dict.drawer.rrnLabel}
+                  </span>
                   <p
                     dir="ltr"
-                    className="mt-0.5 font-mono text-lg font-bold text-[var(--text-primary)]"
+                    className="mt-0.5 text-start font-mono text-xs font-semibold text-[var(--text-primary)]"
                   >
-                    {formatCurrency(selectedTx.amount, locale)}
+                    {selectedTx.shaparakRrn}
                   </p>
-                  <p className="font-mono text-xs text-rose-500">
-                    Score: {formatNumber(selectedTx.riskScore, locale)} / 100
-                  </p>
+                </div>
+
+                <div className="border-t border-[var(--border-subtle)] pt-2.5 text-end">
+                  <span className="text-[11px] text-[var(--text-muted)]">
+                    {dict.drawer.shahkarLabel}
+                  </span>
+                  <div className="mt-0.5 flex items-center justify-end gap-1 text-xs font-semibold">
+                    {selectedTx.shahkarVerified ? (
+                      <span className="inline-flex items-center gap-1 text-emerald-500">
+                        <BadgeCheck className="h-3.5 w-3.5" />
+                        {dict.drawer.shahkarVerified}
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-rose-500">
+                        <ShieldX className="h-3.5 w-3.5" />
+                        {dict.drawer.shahkarFailed}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Risk Factors Breakdown */}
               <div className="space-y-2.5">
-                <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                <h3 className="flex items-center gap-2 text-xs font-bold tracking-wider text-[var(--text-secondary)]">
                   <ShieldAlert className="h-4 w-4 text-rose-500" />
                   <span>{dict.drawer.riskBreakdown}</span>
                 </h3>
@@ -199,7 +248,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                 )}
               </div>
 
-              {/* Protected PII Section with Audit-Logged Unmasking */}
+              {/* Protected Iranian Banking & Identity PII Section */}
               <div className="space-y-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/40 p-4">
                 <div className="flex items-center justify-between gap-2">
                   <h3 className="flex items-center gap-2 text-xs font-bold text-[var(--text-primary)]">
@@ -226,7 +275,8 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                   </button>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  {/* Shetab Card Number */}
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-card)] p-2.5">
                     <span className="text-[11px] text-[var(--text-muted)]">
                       {dict.drawer.cardNumber}
@@ -243,27 +293,58 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                     </p>
                   </div>
 
+                  {/* National ID (Code Melli) */}
                   <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-card)] p-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] text-[var(--text-muted)]">
+                        {dict.drawer.nationalId}
+                      </span>
+                      {isValidIranianNationalId(selectedTx.rawNationalId) && (
+                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-medium text-emerald-500">
+                          {dict.drawer.nationalIdValid}
+                        </span>
+                      )}
+                    </div>
+                    <p
+                      dir="ltr"
+                      className="mt-1 text-start font-mono text-xs font-semibold text-[var(--text-primary)]"
+                    >
+                      {formatNationalIdDisplay(
+                        selectedTx.maskedNationalId,
+                        selectedTx.rawNationalId,
+                        isPiiRevealed
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Sheba / IBAN */}
+                  <div className="sm:col-span-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-card)] p-2.5">
                     <span className="text-[11px] text-[var(--text-muted)]">
-                      {dict.workbench.columns.origin}
+                      {dict.drawer.ibanNumber}
                     </span>
                     <p
                       dir="ltr"
                       className="mt-1 text-start font-mono text-xs font-semibold text-[var(--text-primary)]"
                     >
-                      {selectedTx.originCountry} •{' '}
-                      {maskIpAddress(selectedTx.ipAddress, isPiiRevealed)}
+                      {formatIbanDisplay(
+                        selectedTx.maskedIban,
+                        selectedTx.rawIban,
+                        isPiiRevealed
+                      )}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)]">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[var(--text-muted)]">
                   <span className="flex items-center gap-1">
                     <Fingerprint className="h-3.5 w-3.5" />
                     {dict.drawer.deviceFp}:{' '}
                     <code dir="ltr" className="font-mono text-[var(--text-secondary)]">
                       {selectedTx.deviceFingerprint}
                     </code>
+                  </span>
+                  <span dir="ltr" className="font-mono">
+                    IP: {maskIpAddress(selectedTx.ipAddress, isPiiRevealed)}
                   </span>
                 </div>
 
@@ -274,7 +355,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
 
               {/* Immutable Session Audit Log */}
               <div className="space-y-2.5">
-                <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]">
+                <h3 className="flex items-center gap-2 text-xs font-bold tracking-wider text-[var(--text-secondary)]">
                   <History className="h-4 w-4 text-blue-500" />
                   <span>{dict.drawer.auditSection}</span>
                 </h3>
@@ -284,7 +365,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                     {dict.drawer.auditEmpty}
                   </p>
                 ) : (
-                  <div className="max-h-36 space-y-1.5 overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/40 p-2.5">
+                  <div className="max-h-32 space-y-1.5 overflow-y-auto rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)]/40 p-2.5">
                     {auditLogs.map((log) => (
                       <div
                         key={log.id}
@@ -298,10 +379,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                             ({log.targetId})
                           </span>
                         </div>
-                        <span
-                          dir="ltr"
-                          className="shrink-0 font-mono text-[10px] text-[var(--text-muted)]"
-                        >
+                        <span className="shrink-0 text-[10px] text-[var(--text-muted)]">
                           {formatTime(log.timestamp, locale)}
                         </span>
                       </div>
