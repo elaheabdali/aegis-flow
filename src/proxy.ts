@@ -1,25 +1,50 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { DEFAULT_LOCALE, isValidLocale } from '@/i18n/config';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 function applySecurityHeaders(response: NextResponse): NextResponse {
-  const cspHeader = [
+  const scriptSrc = isDev
+    ? "script-src 'self' 'unsafe-eval' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline'";
+
+  const connectSrc = isDev
+    ? "connect-src 'self' ws: wss:"
+    : "connect-src 'self' wss:";
+
+  const cspDirectives = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+    scriptSrc,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data:",
     "font-src 'self' data:",
+    "object-src 'none'",
     "worker-src 'self' blob:",
-    "connect-src 'self' ws: wss:",
+    connectSrc,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-  ].join('; ');
+  ];
 
-  response.headers.set('Content-Security-Policy', cspHeader);
+  if (!isDev) {
+    cspDirectives.push('upgrade-insecure-requests');
+  }
+
+  response.headers.set('Content-Security-Policy', cspDirectives.join('; '));
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set(
+    'Permissions-Policy',
+    'camera=(), microphone=(), geolocation=(), payment=()'
+  );
+
+  if (!isDev) {
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=63072000; includeSubDomains; preload'
+    );
+  }
 
   return response;
 }
@@ -42,6 +67,8 @@ export function proxy(request: NextRequest): NextResponse {
     const response = NextResponse.next();
     response.cookies.set('NEXT_LOCALE', firstSegment, {
       path: '/',
+      httpOnly: true,
+      secure: !isDev,
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 365,
     });

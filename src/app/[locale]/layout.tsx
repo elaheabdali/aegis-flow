@@ -43,9 +43,38 @@ export async function generateMetadata({
   if (!isValidLocale(locale)) return {};
   const dict = await getDictionary(locale);
 
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://aegis-flow.vercel.app';
+
   return {
+    metadataBase: new URL(siteUrl),
     title: dict.meta.title,
     description: dict.meta.description,
+    alternates: {
+      canonical: `/${locale}`,
+      languages: {
+        fa: '/fa',
+        en: '/en',
+        'x-default': '/fa',
+      },
+    },
+    openGraph: {
+      title: dict.meta.title,
+      description: dict.meta.description,
+      url: `/${locale}`,
+      siteName: 'AegisFlow',
+      locale: locale === 'fa' ? 'fa_IR' : 'en_US',
+      type: 'website',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: dict.meta.title,
+      description: dict.meta.description,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
 }
 
@@ -80,12 +109,23 @@ export default async function LocaleLayout({
               ? 'var(--font-vazirmatn), var(--font-inter), sans-serif'
               : 'var(--font-inter), sans-serif',
         }}
-        className="min-h-screen bg-[var(--surface-canvas)] text-[var(--text-primary)] selection:bg-blue-500/20 selection:text-blue-400"
+        className="min-h-screen bg-[var(--surface-canvas)] text-[var(--text-primary)] antialiased selection:bg-blue-500/20 selection:text-blue-400"
       >
         <AppProviders>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:start-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-blue-600 focus:px-4 focus:py-2 focus:text-xs focus:font-bold focus:text-white focus:shadow-lg"
+          >
+            {typedLocale === 'fa'
+              ? 'پرش به محتوای اصلی میز کار'
+              : 'Skip to main workbench content'}
+          </a>
           <div className="flex min-h-screen flex-col">
             <CommandHeader locale={typedLocale} dict={dict} />
-            <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 sm:px-6">
+            <main
+              id="main-content"
+              className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 sm:px-6"
+            >
               {children}
             </main>
           </div>

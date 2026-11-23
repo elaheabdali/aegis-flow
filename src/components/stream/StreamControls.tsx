@@ -2,12 +2,15 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Pause, Play, Search, X } from 'lucide-react';
+import { DEFAULT_LOCALE, type Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/get-dictionary';
+import { formatNumber } from '@/i18n/formatters';
 import type { RiskSeverity, StreamFilterState } from '@/types/domain';
 import { TELEMETRY_SPRING } from '@/lib/motion';
 import { useWorkbenchStore } from '@/store/useWorkbenchStore';
 
 interface StreamControlsProps {
+  readonly locale?: Locale;
   readonly dict: Dictionary;
   readonly filters: StreamFilterState;
   readonly onUpdateFilters: (next: Partial<StreamFilterState>) => void;
@@ -22,6 +25,7 @@ const SEVERITY_OPTIONS: readonly (RiskSeverity | 'all')[] = [
 ];
 
 export function StreamControls({
+  locale = DEFAULT_LOCALE,
   dict,
   filters,
   onUpdateFilters,
@@ -33,13 +37,17 @@ export function StreamControls({
   return (
     <div className="flex flex-col gap-3 border-b border-[var(--border-subtle)] p-4 lg:flex-row lg:items-center lg:justify-between">
       {/* Search Box */}
-      <div className="relative flex-1 max-w-md">
+      <div className="relative max-w-md flex-1">
         <Search
           className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]"
           aria-hidden="true"
         />
         <input
-          type="search"
+          type="text"
+          inputMode="search"
+          maxLength={120}
+          autoComplete="off"
+          spellCheck={false}
           value={filters.query}
           onChange={(e) => onUpdateFilters({ query: e.target.value })}
           placeholder={dict.workbench.searchPlaceholder}
@@ -50,7 +58,7 @@ export function StreamControls({
           <button
             type="button"
             onClick={() => onUpdateFilters({ query: '' })}
-            aria-label="Clear search"
+            aria-label={locale === 'fa' ? 'پاک کردن جستجو' : 'Clear search'}
             className="absolute end-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           >
             <X className="h-3.5 w-3.5" />
@@ -62,8 +70,8 @@ export function StreamControls({
       <div className="flex flex-wrap items-center gap-2.5">
         <div
           role="group"
-          aria-label="Risk severity filters"
-          className="flex items-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1"
+          aria-label={dict.workbench.columns.riskScore}
+          className="flex flex-wrap items-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] p-1"
         >
           {SEVERITY_OPTIONS.map((sev) => {
             const isSelected = filters.severity === sev;
@@ -116,11 +124,11 @@ export function StreamControls({
                     initial={{ scale: 0.7, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0.7, opacity: 0 }}
-                    className="rounded-full bg-amber-500 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-950"
+                    className="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-slate-950 tabular-nums"
                   >
                     {dict.workbench.queuedBadge.replace(
                       '{count}',
-                      String(pendingCount)
+                      formatNumber(pendingCount, locale)
                     )}
                   </motion.span>
                 )}
