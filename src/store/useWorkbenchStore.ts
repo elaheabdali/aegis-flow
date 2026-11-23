@@ -118,6 +118,10 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
       const nextPaused =
         typeof forceState === 'boolean' ? forceState : !state.isPaused;
 
+      if (nextPaused === state.isPaused) {
+        return state;
+      }
+
       if (!nextPaused && state.pendingQueue.length > 0) {
         const flushed = [...state.pendingQueue, ...state.transactions].slice(
           0,
@@ -127,6 +131,24 @@ export const useWorkbenchStore = create<WorkbenchState>((set) => ({
           isPaused: false,
           pendingQueue: [],
           transactions: flushed,
+        };
+      }
+
+      if (nextPaused) {
+        const pauseLog: AuditLogEntry = {
+          id: `AUD-${Date.now().toString(36).toUpperCase()}-${Math.random()
+            .toString(36)
+            .slice(2, 5)
+            .toUpperCase()}`,
+          timestamp: new Date().toISOString(),
+          actorRole: state.activeRole,
+          action: 'STREAM_PAUSED',
+          targetId: 'TELEMETRY_STREAM',
+          reason: 'Analyst froze live Shetab/Shaparak telemetry feed for inspection',
+        };
+        return {
+          isPaused: true,
+          auditLogs: [pauseLog, ...state.auditLogs].slice(0, 50),
         };
       }
 

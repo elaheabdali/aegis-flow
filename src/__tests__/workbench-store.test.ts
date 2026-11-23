@@ -48,7 +48,7 @@ describe('Workbench Zustand Store, Toman/Rial Unit & Queue Buffering', () => {
     });
   });
 
-  it('queues incoming transactions when stream is paused and flushes on resume', () => {
+  it('queues incoming transactions when stream is paused, logs STREAM_PAUSED, and flushes on resume', () => {
     const store = useWorkbenchStore.getState();
     const tx1 = makeScoredTx('SHP-001');
     const tx2 = makeScoredTx('SHP-002');
@@ -65,6 +65,9 @@ describe('Workbench Zustand Store, Toman/Rial Unit & Queue Buffering', () => {
     expect(useWorkbenchStore.getState().transactions).toHaveLength(1);
 
     useWorkbenchStore.getState().togglePause(true);
+    expect(useWorkbenchStore.getState().auditLogs[0]?.action).toBe(
+      'STREAM_PAUSED'
+    );
 
     useWorkbenchStore.getState().ingestProcessedBatch({
       accepted: [tx2],

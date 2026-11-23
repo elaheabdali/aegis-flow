@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,6 +20,7 @@ import { getDirection, type Locale } from '@/i18n/config';
 import type { Dictionary } from '@/i18n/get-dictionary';
 import { formatIranianCurrency } from '@/i18n/formatters';
 import { getStepSlideOffset, SMOOTH_EASE, TELEMETRY_SPRING } from '@/lib/motion';
+import { sanitizeNarrativeInput } from '@/features/security/sanitizer';
 import { useWorkbenchStore } from '@/store/useWorkbenchStore';
 import type { FraudTypology, Transaction, TransactionStatus } from '@/types/domain';
 
@@ -117,6 +118,7 @@ export function SarWizardModal({
     handleSubmit,
     trigger,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<SarFormValues>({
     resolver: zodResolver(schema),
@@ -135,12 +137,22 @@ export function SarWizardModal({
     },
   });
 
+  // Synchronize actionType if user switches role while wizard is open
+  useEffect(() => {
+    if (isJuniorAnalyst) {
+      setValue('actionType', 'sar_only');
+    }
+  }, [isJuniorAnalyst, setValue]);
+
   const watchedTypology = watch('typology');
   const watchedActionType = watch('actionType');
 
   const mutation = useMutation({
     mutationFn: async (values: SarFormValues) => {
       if (!transaction) throw new Error('NO_ACTIVE_TRANSACTION');
+
+      const effectiveActionType =
+        activeRole === 'junior_analyst' ? 'sar_only' : values.actionType;
 
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 2800);
@@ -154,7 +166,8 @@ export function SarWizardModal({
           },
           body: JSON.stringify({
             transactionId: transaction.id,
-            actionType: values.actionType,
+            actorRole: activeRole,
+            actionType: effectiveActionType,
             typology: values.typology,
             analystNotes: values.analystNotes,
             digitalSignature: values.digitalSignature,
@@ -170,7 +183,7 @@ export function SarWizardModal({
           throw new Error(errData.error ?? `HTTP_${res.status}`);
         }
 
-        return res.json();
+        return (await res.json()) as { ok: boolean; filingReference: string };
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           throw new Error('CLIENT_TIMEOUT_EXCEEDED');
@@ -183,22 +196,28 @@ export function SarWizardModal({
     onMutate: async (values) => {
       if (!transaction) return { previousStatus: 'flagged' as TransactionStatus };
       const previousStatus = transaction.status;
+      const effectiveActionType =
+        activeRole === 'junior_analyst' ? 'sar_only' : values.actionType;
       const optimisticStatus: TransactionStatus =
-        values.actionType === 'freeze_and_sar' ? 'frozen' : 'reported_sar';
+        effectiveActionType === 'freeze_and_sar' ? 'frozen' : 'reported_sar';
 
       updateTransactionStatus(transaction.id, optimisticStatus);
       return { previousStatus };
     },
     onSuccess: (_data, values) => {
       if (!transaction) return;
+      const safeSignature = sanitizeNarrativeInput(values.digitalSignature);
+      const effectiveActionType =
+        activeRole === 'junior_analyst' ? 'sar_only' : values.actionType;
+
       addAuditLog({
         actorRole: activeRole,
         action:
-          values.actionType === 'freeze_and_sar'
+          effectiveActionType === 'freeze_and_sar'
             ? 'ACCOUNT_FROZEN'
             : 'SAR_SUBMITTED',
         targetId: transaction.id,
-        reason: `Filed FIU report (${values.typology}) signed by ${values.digitalSignature}`,
+        reason: `Filed FIU report (${values.typology}) signed by ${safeSignature}`,
       });
       onNotify(dict.wizard.feedback.optimisticSuccess, 'success');
       onClose();
@@ -216,6 +235,11 @@ export function SarWizardModal({
   });
 
   if (!transaction) return null;
+
+  const handleSafeClose = () => {
+    if (mutation.isPending) return;
+    onClose();
+  };
 
   const handleNextStep = async () => {
     let valid = false;
@@ -243,13 +267,14 @@ export function SarWizardModal({
   };
 
   const handlePrevStep = () => {
-    if (step > 1) {
+    if (step > 1 && !mutation.isPending) {
       setStepDelta(-1);
       setStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
     }
   };
 
   const onSubmit = (values: SarFormValues) => {
+    if (mutation.isPending) return;
     mutation.mutate(values);
   };
 
@@ -274,7 +299,7 @@ export function SarWizardModal({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        onClick={onClose}
+        onClick={handleSafeClose}
         className="fixed inset-0 bg-slate-950/75 backdrop-blur-xs"
       />
 
@@ -306,9 +331,10 @@ export function SarWizardModal({
 
           <button
             type="button"
-            onClick={onClose}
+            onClick={handleSafeClose}
+            disabled={mutation.isPending}
             aria-label={dict.wizard.actions.cancel}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-40"
           >
             <X className="h-4 w-4" />
           </button>

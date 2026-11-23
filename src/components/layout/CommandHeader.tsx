@@ -18,6 +18,7 @@ import type { Dictionary } from '@/i18n/get-dictionary';
 import { TELEMETRY_SPRING } from '@/lib/motion';
 import { LivePulseBadge } from '@/components/ui/MotionPrimitives';
 import { useWorkbenchStore } from '@/store/useWorkbenchStore';
+import type { AnalystRole } from '@/types/domain';
 
 interface CommandHeaderProps {
   readonly locale: Locale;
@@ -143,7 +144,28 @@ export function CommandHeader({ locale, dict }: CommandHeaderProps) {
             })}
           </div>
 
-          {/* RBAC Role Switcher */}
+          {/* Responsive RBAC Role Selector for < xl viewports */}
+          <div className="flex xl:hidden">
+            <label htmlFor="mobile-role-select" className="sr-only">
+              {dict.header.roleLabel}
+            </label>
+            <select
+              id="mobile-role-select"
+              aria-label={dict.header.roleLabel}
+              value={activeRole}
+              onChange={(e) => setActiveRole(e.target.value as AnalystRole)}
+              className="h-8 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] px-2 text-xs font-medium text-[var(--text-primary)] focus:border-blue-500 focus:outline-none"
+            >
+              <option value="senior_investigator">
+                {dict.header.roles.senior_investigator}
+              </option>
+              <option value="junior_analyst">
+                {dict.header.roles.junior_analyst}
+              </option>
+            </select>
+          </div>
+
+          {/* Desktop RBAC Role Switcher */}
           <div
             role="group"
             aria-label={dict.header.roleLabel}

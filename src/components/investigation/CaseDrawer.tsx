@@ -52,19 +52,27 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
   const auditLogs = useWorkbenchStore((s) => s.auditLogs);
   const addAuditLog = useWorkbenchStore((s) => s.addAuditLog);
 
-  const [revealedTxIds, setRevealedTxIds] = useState<Record<string, boolean>>({});
+  const [unmaskedForTxId, setUnmaskedForTxId] = useState<string | null>(null);
 
   const selectedTx =
     transactions.find((t) => t.id === selectedTxId) ??
     pendingQueue.find((t) => t.id === selectedTxId) ??
     null;
 
-  const isPiiRevealed = selectedTx ? Boolean(revealedTxIds[selectedTx.id]) : false;
+  const isPiiRevealed = Boolean(
+    selectedTx && unmaskedForTxId === selectedTx.id
+  );
+
+  const handleCloseDrawer = () => {
+    setUnmaskedForTxId(null);
+    selectTransaction(null);
+  };
 
   useEffect(() => {
     if (!selectedTx) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        setUnmaskedForTxId(null);
         selectTransaction(null);
       }
     };
@@ -75,7 +83,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
   const handleTogglePii = () => {
     if (!selectedTx) return;
     const nextState = !isPiiRevealed;
-    setRevealedTxIds((prev) => ({ ...prev, [selectedTx.id]: nextState }));
+    setUnmaskedForTxId(nextState ? selectedTx.id : null);
 
     if (nextState) {
       addAuditLog({
@@ -102,7 +110,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.18 }}
-            onClick={() => selectTransaction(null)}
+            onClick={handleCloseDrawer}
             className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs"
             aria-hidden="true"
           />
@@ -140,7 +148,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
 
               <button
                 type="button"
-                onClick={() => selectTransaction(null)}
+                onClick={handleCloseDrawer}
                 aria-label={dict.drawer.close}
                 className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
               >
@@ -300,7 +308,7 @@ export function CaseDrawer({ locale, dict, onOpenWizard }: CaseDrawerProps) {
                         {dict.drawer.nationalId}
                       </span>
                       {isValidIranianNationalId(selectedTx.rawNationalId) && (
-                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-medium text-emerald-500">
+                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-medium text-emerald-500">
                           {dict.drawer.nationalIdValid}
                         </span>
                       )}

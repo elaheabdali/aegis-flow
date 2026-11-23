@@ -77,10 +77,13 @@ function SeverityBadge({
 export function TransactionGrid({ locale, dict }: TransactionGridProps) {
   const parentRef = useRef<HTMLDivElement | null>(null);
   const transactions = useWorkbenchStore((s) => s.transactions);
+  const throughputPerSec = useWorkbenchStore((s) => s.metrics.throughputPerSec);
   const currency = useWorkbenchStore((s) => s.currency);
   const selectedTxId = useWorkbenchStore((s) => s.selectedTxId);
   const selectTransaction = useWorkbenchStore((s) => s.selectTransaction);
   const togglePause = useWorkbenchStore((s) => s.togglePause);
+
+  const isInitializing = transactions.length === 0 && throughputPerSec === 0;
 
   const rowVirtualizer = useVirtualizer({
     count: transactions.length,
@@ -120,6 +123,7 @@ export function TransactionGrid({ locale, dict }: TransactionGridProps) {
         role="grid"
         aria-label={dict.workbench.title}
         aria-rowcount={transactions.length}
+        aria-busy={isInitializing}
         tabIndex={0}
         onKeyDown={handleKeyDown}
         className="focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60"
@@ -154,7 +158,41 @@ export function TransactionGrid({ locale, dict }: TransactionGridProps) {
 
         {/* Virtualized Scroll Viewport */}
         <div ref={parentRef} className="h-[520px] overflow-y-auto">
-          {transactions.length === 0 ? (
+          {isInitializing ? (
+            <div
+              role="status"
+              aria-label="Loading telemetry stream"
+              className="divide-y divide-[var(--border-subtle)]/60"
+            >
+              {Array.from({ length: 8 }).map((_, idx) => (
+                <div
+                  key={idx}
+                  className="grid h-[62px] animate-pulse grid-cols-12 items-center px-4"
+                >
+                  <div className="col-span-2 sm:col-span-1">
+                    <div className="h-3 w-12 rounded bg-[var(--surface-elevated)]" />
+                  </div>
+                  <div className="col-span-3 sm:col-span-2 space-y-1.5 pe-2">
+                    <div className="h-3.5 w-20 rounded bg-[var(--surface-elevated)]" />
+                    <div className="h-2.5 w-24 rounded bg-[var(--surface-elevated)]/70" />
+                  </div>
+                  <div className="col-span-4 sm:col-span-3 space-y-1.5 pe-2">
+                    <div className="h-3.5 w-36 rounded bg-[var(--surface-elevated)]" />
+                    <div className="h-2.5 w-28 rounded bg-[var(--surface-elevated)]/70" />
+                  </div>
+                  <div className="hidden sm:col-span-2 sm:block">
+                    <div className="h-3.5 w-20 rounded bg-[var(--surface-elevated)]" />
+                  </div>
+                  <div className="col-span-3 sm:col-span-2 flex justify-end">
+                    <div className="h-4 w-24 rounded bg-[var(--surface-elevated)]" />
+                  </div>
+                  <div className="hidden md:col-span-2 md:flex justify-end">
+                    <div className="h-6 w-16 rounded bg-[var(--surface-elevated)]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : transactions.length === 0 ? (
             <div className="flex h-full items-center justify-center p-8 text-sm text-[var(--text-muted)]">
               {dict.workbench.emptyState}
             </div>
